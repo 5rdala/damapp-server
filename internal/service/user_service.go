@@ -5,9 +5,9 @@ import (
 	"damapp-server/internal/domain"
 	"damapp-server/internal/repository"
 	"damapp-server/utils"
-	"fmt"
 
 	"errors"
+	"fmt"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -43,27 +43,34 @@ func (s *UserService) Authenticate(username, password string) (string, error) {
 	return token, nil
 }
 
-func (s *UserService) CreateUser(username, password string) error {
+func (s *UserService) CreateUser(username, password string) (string, error) {
 	existingUser, err := s.repo.GetByUserName(username)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return apperror.New(apperror.ErrCodeInternal, "failed to check username availability")
+		return "", apperror.New(apperror.ErrCodeInternal, "failed to check username availability")
 	}
 
 	if existingUser != nil {
-		return apperror.New(apperror.ErrCodeInvalidCredential, "username is already taken")
+		return "", apperror.New(apperror.ErrCodeInvalidCredential, "username is already taken")
 	}
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPass, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return apperror.New(apperror.ErrCodeInternal, "failed to hash password")
+		return "", apperror.New(apperror.ErrCodeInternal, "failed to hash password")
 	}
 
-	err = s.repo.Create(&domain.User{Username: username, Password: string(hashed)})
+	userID := utils.GenerateID()
+
+	err = s.repo.Create(&domain.User{ID: userID, Username: username, Password: string(hashedPass)})
 	if err != nil {
-		return apperror.New(apperror.ErrCodeInternal, "failed to create user")
+		return "", apperror.New(apperror.ErrCodeInternal, "failed to create user")
 	}
 
-	return nil
+	token, err := utils.GenerateJWT(userID, username)
+	if err != nil {
+		return "", apperror.New(apperror.ErrCodeInternal, "could not create token")
+	}
+
+	return token, nil
 }
 
 func (s *UserService) GetUserByID(id uint64) (*domain.User, error) {
