@@ -1,6 +1,7 @@
 package service
 
 import (
+	"damapp-server/internal/apperror"
 	"damapp-server/internal/domain"
 	"damapp-server/internal/repository"
 
@@ -20,24 +21,25 @@ func NewFriendshipService(repo repository.FriendshipRepository) *FriendshipServi
 
 func (s *FriendshipService) SendFriendRequest(senderID, receiverID uint64) error {
 	if senderID == receiverID {
-		return errors.New("you cannot send a friend request to yourself")
+		return apperror.New(apperror.ErrCodeBadRequest, "you cannot send friend request to yourself")
 	}
 
 	existing, err := s.repo.GetByUserIDs(senderID, receiverID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return errors.New("could not check existing friendship")
+		return apperror.New(apperror.ErrCodeInternal, "could not check friendship existence")
 	}
 
 	if existing != nil {
 		switch existing.Status {
 		case domain.FriendshipStatusPending:
-			return errors.New("a friend request is already pending")
+			return apperror.New(apperror.ErrCodeBadRequest, "a friend request is already pending")
 		case domain.FriendshipStatusAccepted:
-			return errors.New("you are already friends")
+			return apperror.New(apperror.ErrCodeBadRequest, "you are already friends")
 		case domain.FriendshipStatusRejected:
-			return errors.New("friend request was previously rejected")
+			return apperror.New(apperror.ErrCodeBadRequest, "friend request was previously rejected")
 		}
 	}
+
 	friendship := &domain.Friendship{
 		UserID1:   senderID,
 		UserID2:   receiverID,
@@ -46,7 +48,7 @@ func (s *FriendshipService) SendFriendRequest(senderID, receiverID uint64) error
 	}
 
 	if err := s.repo.Create(friendship); err != nil {
-		return errors.New("could not send friend request")
+		return apperror.New(apperror.ErrCodeInternal, "could not send friend request")
 	}
 
 	return nil
@@ -55,7 +57,7 @@ func (s *FriendshipService) SendFriendRequest(senderID, receiverID uint64) error
 func (s *FriendshipService) AcceptFriendRequest(friendshipID uint64) error {
 	err := s.repo.AcceptFriendRequest(friendshipID)
 	if err != nil {
-		return errors.New("could not accept the friend request")
+		return apperror.New(apperror.ErrCodeInternal, "could not accept the friend request")
 	}
 	return nil
 }
@@ -63,7 +65,7 @@ func (s *FriendshipService) AcceptFriendRequest(friendshipID uint64) error {
 func (s *FriendshipService) RejectFriendRequest(friendshipID uint64) error {
 	err := s.repo.RejectFriendRequest(friendshipID)
 	if err != nil {
-		return errors.New("could not reject the friend request")
+		return apperror.New(apperror.ErrCodeInternal, "could not reject the friend request")
 	}
 	return nil
 }
@@ -71,7 +73,7 @@ func (s *FriendshipService) RejectFriendRequest(friendshipID uint64) error {
 func (s *FriendshipService) GetPendingRequests(userID2 uint64) ([]domain.Friendship, error) {
 	friendships, err := s.repo.GetPendingRequests(userID2)
 	if err != nil {
-		return nil, errors.New("failed to fetch pending requests")
+		return nil, apperror.New(apperror.ErrCodeInternal, "failed to retrieve pending requests")
 	}
 	return friendships, nil
 }
@@ -79,7 +81,7 @@ func (s *FriendshipService) GetPendingRequests(userID2 uint64) ([]domain.Friends
 func (s *FriendshipService) GetSentRequests(userID1 uint64) ([]domain.Friendship, error) {
 	friendships, err := s.repo.GetSentFriendRequests(userID1)
 	if err != nil {
-		return nil, errors.New("failed to fetch sent requests")
+		return nil, apperror.New(apperror.ErrCodeInternal, "failed to retrieve sent requests")
 	}
 	return friendships, nil
 }
@@ -87,7 +89,7 @@ func (s *FriendshipService) GetSentRequests(userID1 uint64) ([]domain.Friendship
 func (s *FriendshipService) AreFriends(userID1, userID2 uint64) (bool, error) {
 	friendship, err := s.repo.GetByUserIDs(userID1, userID2)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, errors.New("failed to check friendship")
+		return false, apperror.New(apperror.ErrCodeInternal, "failed to check friendship")
 	}
 	if friendship == nil {
 		return false, nil
