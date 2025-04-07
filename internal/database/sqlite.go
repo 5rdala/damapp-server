@@ -1,6 +1,7 @@
 package database
 
 import (
+	"damapp-server/config"
 	"damapp-server/internal/domain"
 
 	"gorm.io/driver/sqlite"
@@ -10,7 +11,7 @@ import (
 )
 
 func InitDB() (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open("./database.db"), &gorm.Config{})
+	db, err := gorm.Open(sqlite.Open(config.Sqlite_database), &gorm.Config{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to the database: %v", err)
 	}
