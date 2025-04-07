@@ -5,7 +5,6 @@ import (
 	"damapp-server/internal/repository"
 
 	"errors"
-	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -26,7 +25,7 @@ func (s *FriendshipService) SendFriendRequest(senderID, receiverID uint64) error
 
 	existing, err := s.repo.GetByUserIDs(senderID, receiverID)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return fmt.Errorf("could not check existing friendship: %w", err)
+		return errors.New("could not check existing friendship")
 	}
 
 	if existing != nil {
@@ -47,7 +46,7 @@ func (s *FriendshipService) SendFriendRequest(senderID, receiverID uint64) error
 	}
 
 	if err := s.repo.Create(friendship); err != nil {
-		return fmt.Errorf("could not send friend request: %w", err)
+		return errors.New("could not send friend request")
 	}
 
 	return nil
@@ -88,7 +87,7 @@ func (s *FriendshipService) GetSentRequests(userID1 uint64) ([]domain.Friendship
 func (s *FriendshipService) AreFriends(userID1, userID2 uint64) (bool, error) {
 	friendship, err := s.repo.GetByUserIDs(userID1, userID2)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return false, fmt.Errorf("failed to check friendship: %w", err)
+		return false, errors.New("failed to check friendship")
 	}
 	if friendship == nil {
 		return false, nil
