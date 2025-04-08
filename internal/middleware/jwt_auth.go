@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"damapp-server/utils"
+
 	"github.com/gofiber/fiber/v2"
 
-	"fmt"
+	"net/http"
 	"strings"
 )
 
@@ -22,8 +23,8 @@ func JWTMiddleware() fiber.Handler {
 
 		claims, err := utils.ValidateJWT(token)
 		if err != nil {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": fmt.Sprintf("Invalid token: %s", err.Error()),
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Invalid token",
 			})
 		}
 
