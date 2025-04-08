@@ -24,8 +24,15 @@ func GenerateJWT(userID uint64, username string) (string, error) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 24 * 7)),
 		},
 	}
+
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString([]byte(config.JWtSecret))
+
+	signedToken, err := token.SignedString([]byte(config.JWtSecret))
+	if err != nil {
+		return "", fmt.Errorf("failed to sign token: %v", err)
+	}
+
+	return signedToken, nil
 }
 
 func ValidateJWT(tokenStr string) (*Claims, error) {
@@ -33,10 +40,14 @@ func ValidateJWT(tokenStr string) (*Claims, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return config.JWtSecret, nil
+		return []byte(config.JWtSecret), nil
 	})
+
 	if err != nil {
-		return nil, err
+		if err == jwt.ErrTokenExpired {
+			return nil, fmt.Errorf("token expired")
+		}
+		return nil, fmt.Errorf("failed to parse token: %v", err)
 	}
 
 	if claims, ok := token.Claims.(*Claims); ok && token.Valid {
