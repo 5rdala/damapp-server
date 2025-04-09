@@ -12,6 +12,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -25,6 +26,9 @@ func main() {
 
 	utils.NewSnowFlake(time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC).UnixMilli(), 1)
 
+	websocketService := service.NewWebSocketService()
+	websocketHandler := handler.NewWebSocketHandler(websocketService)
+
 	userRepo := repository.NewUserRepo(db)
 	userService := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userService)
@@ -35,6 +39,8 @@ func main() {
 
 	// create a new Fiber app
 	app := fiber.New()
+
+	app.Get("/ws", websocket.New(websocketHandler.HandleWebSocket()))
 
 	// define routes for User endpoints
 	app.Post("/users", userHandler.CreateUser)
