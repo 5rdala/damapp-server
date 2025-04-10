@@ -9,6 +9,7 @@ const (
 	ErrCodeInvalidCredential HTTPStatusCode = http.StatusUnauthorized
 	ErrCodeInternal          HTTPStatusCode = http.StatusInternalServerError
 	ErrCodeBadRequest        HTTPStatusCode = http.StatusBadRequest
+	ErrCodeConflict          HTTPStatusCode = http.StatusConflict
 )
 
 type AppError struct {
