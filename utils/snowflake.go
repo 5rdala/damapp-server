@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"crypto/rand"
+	"fmt"
+	"math/big"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -69,4 +72,13 @@ func (s *snowflake) Generate() uint64 {
 			return id
 		}
 	}
+}
+
+func Generate6DigitCode() (int, error) {
+	num, err := rand.Int(rand.Reader, big.NewInt(900000))
+	if err != nil {
+		return 0, fmt.Errorf("failed to generate random number")
+	}
+
+	return int(num.Int64()) + 100000, nil
 }
